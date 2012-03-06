@@ -82,23 +82,34 @@ class KMeans:
         predictedClasses = self.mostFrequentClass[self.cluster]
         classDiff = testClasses - predictedClasses
         nCorrect = classDiff[np.where(classDiff == 0)].size
-        cohesion = self.computeCohesion(testData)
+        cohesion, separation = self.cohesionSeparation(testData)
         print cohesion
+        print separation
         print "accuracy", float(nCorrect)/float(testClasses.size)
 
-    def computeCohesion(self, data):
-        cohesion = np.empty(self.k)
+    def cohesionSeparation(self, data):
+        cohesion = np.zeros(self.k)
+        separation = np.zeros((self.k, self.k))
+        
         # currently cohesion is across all data.  need for each cluster
         for i in range(self.k):
             thisCluster = data[np.where(self.cluster == i)]
-            clusterSize = thisCluster[:,0].size
-            thisCohesion = np.zeros(clusterSize**2)
-            for j in xrange(clusterSize):
-                for k in xrange(j, clusterSize):
+            thisClusterSize = thisCluster[:,0].size
+            thisCohesion = np.zeros(thisClusterSize**2)
+            for j in xrange(thisClusterSize):
+                for k in xrange(j + 1, thisClusterSize):
                     thisCohesion[j*k + k] = np.sum((thisCluster[j] - thisCluster[k])**2)
-            cohesion[i] = np.sum(thisCohesion)
-            
-        return cohesion
+            cohesion[i] = 1/np.sum(thisCohesion)
+            for j in range(i + 1, self.k):
+                thatCluster = data[np.where(self.cluster == j)]
+                thatClusterSize = thatCluster[:,0].size
+                thisSeparation = np.zeros(thisClusterSize*thatClusterSize)
+                for m in xrange(thisClusterSize):
+                    for n in xrange(m + 1, thatClusterSize):
+                        thisSeparation[m*n + n] = np.sum((thisCluster[m] - thatCluster[n])**2)
+                separation[i, j] = np.sum(thisSeparation)
+        
+        return (cohesion, separation)
         
 parser = ArgumentParser()
 parser.add_argument('-k', type=int, default=3, help='number of clusters')
