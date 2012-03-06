@@ -42,14 +42,14 @@ class KMeans:
         
         # find the closest cluster
         self.cluster = distances.argmin(axis=0)
-        self.cluster = np.transpose(self.cluster*np.ones((1,nData), dtype='int'))
 
         # update the cluster centers
         for i in range(self.k):
-            thisCluster = np.where(self.cluster == i, 1, 0)
-            if np.sum(thisCluster) > 0:
-                self.centers[i,:] = np.sum(data*thisCluster, axis=0)/np.sum(thisCluster)
-
+            thisCluster = data[np.where(self.cluster == i)]
+            clusterSize = thisCluster[:,0].size
+            if clusterSize > 0:
+                testCenter = np.sum(thisCluster, axis=0)/clusterSize
+                
         centerDiff = oldCenters - self.centers
         nUnequal = centerDiff[np.where(centerDiff != 0)].size
         # if no centers have changed position, return true to indicate
@@ -65,7 +65,7 @@ class KMeans:
     def labelCenters(self, classes):
         for i in range(self.k):
             thisCluster = np.where(self.cluster == i, 1, 0)
-            clusterClasses = (np.transpose(thisCluster)*classes)[0,:]
+            clusterClasses = (np.transpose(thisCluster)*classes)
             counts = np.bincount(clusterClasses)
             # find the bin with the highest count, excluding 0
             self.mostFrequentClass[i] = np.argmax(counts[1:]) + 1
@@ -83,13 +83,21 @@ class KMeans:
         classDiff = testClasses - predictedClasses
         nCorrect = classDiff[np.where(classDiff == 0)].size
         cohesion = self.computeCohesion(testData)
+        print cohesion
         print "accuracy", float(nCorrect)/float(testClasses.size)
 
     def computeCohesion(self, data):
+        cohesion = np.empty(self.k)
         # currently cohesion is across all data.  need for each cluster
-        cohesion = np.subtract.outer(data, data)**2
-        cohesion = np.apply_over_axes(np.sum, cohesion, [1,2,3])[:,0,0,0]
-        assert cohesion.size == data[:,0].size
+        for i in range(self.k):
+            thisCluster = data[np.where(self.cluster == i)]
+            clusterSize = thisCluster[:,0].size
+            thisCohesion = np.zeros(clusterSize**2)
+            for j in xrange(clusterSize):
+                for k in xrange(j, clusterSize):
+                    thisCohesion[j*k + k] = np.sum((thisCluster[j] - thisCluster[k])**2)
+            cohesion[i] = np.sum(thisCohesion)
+            
         return cohesion
         
 parser = ArgumentParser()
