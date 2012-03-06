@@ -52,21 +52,16 @@ class KMeans:
             if np.sum(thisCluster) > 0:
                 self.centers[i,:] = np.sum(self.data*thisCluster, axis=0)/np.sum(thisCluster)
 
-        # elements of centerDiff are true if oldCenters == newCenters
-        # and false if they are not
         centerDiff = oldCenters - self.centers
         nUnequal = centerDiff[np.where(centerDiff != 0)].size
-        print nUnequal
         # if no centers have changed position, return true to indicate
         # that learning is complete
         return nUnequal == 0
 
     def computeDistances(self, data, nData):
-        distances = np.ones((1,nData))*np.sum((data-self.centers[0,:])**2,axis=1)
-        for i in xrange(self.k - 1):
-            distances = np.append(distances, np.ones((1,nData))* \
-                                  np.sum((data - self.centers[i + 1,:])**2, axis=1), axis=0)
-                     
+        distances = np.empty((self.k, nData))
+        for i in xrange(self.k):
+            distances[i] = np.sum((data - self.centers[i,:])**2, axis=1)
         return distances
         
     def labelCenters(self):
@@ -91,11 +86,15 @@ class KMeans:
         predictedClasses = self.mostFrequentClass[cluster]
         classDiff = testClasses - predictedClasses
         nCorrect = classDiff[np.where(classDiff == 0)].size
-        print predictedClasses
-        print testClasses
-        print classDiff
+        cohesion = self.computeCohesion(testData)
         print "accuracy", float(nCorrect)/float(testClasses.size)
-        
+
+    def computeCohesion(self, data):
+        # currently cohesion is across all data.  need for each cluster
+        cohesion = np.subtract.outer(data, data)**2
+        cohesion = np.apply_over_axes(np.sum, cohesion, [1,2,3])[:,0,0,0]
+        assert cohesion.size == data[:,0].size
+        return cohesion
         
 parser = ArgumentParser()
 parser.add_argument('-k', type=int, default=3, help='number of clusters')
