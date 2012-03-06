@@ -2,19 +2,20 @@ from argparse import ArgumentParser
 import numpy as np
 
 class KMeans:
-    def __init__(self, k, train, test):
+    def __init__(self, k, trainPath):
         self.k = k
-        self.classes = np.loadtxt(train, delimiter=',', usecols=[0], dtype='int')
-        self.mostFrequentClass = np.empty(self.k, dtype='int')
-        self.data = np.loadtxt(train, delimiter=',')
-        # remove classes - don't want to cheat :)        
-        self.data = self.data[:,1:]
+        data = np.loadtxt(trainPath, delimiter=',')
+        self.classes = data[:,0]
+        self.classes = self.classes.astype(int)
+        # remove classes - don't want to cheat :)
+        self.data = data[:,1:]
         self.nData = self.data[:,0].size
         self.nFeatures = self.data[0,:].size
         # k centers, each with n features
         self.centers = np.empty((self.k,self.nFeatures))
+        self.mostFrequentClass = np.empty(self.k, dtype='int')        
         
-    def run(self):
+    def train(self):
         self.initClusters()
         while not self.learn():
             pass
@@ -39,10 +40,8 @@ class KMeans:
         oldCenters = np.copy(self.centers)
 
         # compute distances
-        distances = np.ones((1,self.nData))*np.sum((self.data-self.centers[0,:])**2,axis=1)
-        for i in xrange(self.k - 1):
-            distances = np.append(distances, np.ones((1,self.nData))*np.sum((self.data - self.centers[i + 1,:])**2, axis=1), axis=0)
-
+        distances = self.computeDistances(self.data, self.nData)
+        
         # find the closest cluster
         self.cluster = distances.argmin(axis=0)
         self.cluster = np.transpose(self.cluster*np.ones((1,self.nData), dtype='int'))
@@ -55,12 +54,21 @@ class KMeans:
 
         # elements of centerDiff are true if oldCenters == newCenters
         # and false if they are not
-        centerDiff = np.in1d(oldCenters, self.centers)
-        nUnequal = centerDiff[np.where(centerDiff == False)].size
+        centerDiff = oldCenters - self.centers
+        nUnequal = centerDiff[np.where(centerDiff != 0)].size
+        print nUnequal
         # if no centers have changed position, return true to indicate
         # that learning is complete
         return nUnequal == 0
 
+    def computeDistances(self, data, nData):
+        distances = np.ones((1,nData))*np.sum((data-self.centers[0,:])**2,axis=1)
+        for i in xrange(self.k - 1):
+            distances = np.append(distances, np.ones((1,nData))* \
+                                  np.sum((data - self.centers[i + 1,:])**2, axis=1), axis=0)
+                     
+        return distances
+        
     def labelCenters(self):
         for i in range(self.k):
             thisCluster = np.where(self.cluster == i, 1, 0)
@@ -71,9 +79,28 @@ class KMeans:
             self.mostFrequentClass[i] = np.argmax(counts[1:]) + 1
 
         print self.mostFrequentClass
+
+    def test(self, testPath):
+        data = np.loadtxt(testPath, delimiter=',')
+        testClasses = data[:,0]
+        testClasses = testClasses.astype(int)
+        testData = data[:,1:]
+        nTestData = testData[:,0].size
+        distances = self.computeDistances(testData, nTestData)
+        cluster = distances.argmin(axis=0)
+        predictedClasses = self.mostFrequentClass[cluster]
+        classDiff = testClasses - predictedClasses
+        nCorrect = classDiff[np.where(classDiff == 0)].size
+        print predictedClasses
+        print testClasses
+        print classDiff
+        print "accuracy", float(nCorrect)/float(testClasses.size)
+        
+        
 parser = ArgumentParser()
 parser.add_argument('-k', type=int, default=3, help='number of clusters')
 args = parser.parse_args()
-kMeans = KMeans(args.k, 'data/wine.train', 'data/wine.test')
-kMeans.run()
+kMeans = KMeans(args.k, 'data/wine.train')
+kMeans.train()
+kMeans.test('data/wine.test')
 
