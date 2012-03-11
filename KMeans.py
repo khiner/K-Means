@@ -87,8 +87,6 @@ class KMeans:
             clusterClasses = (np.transpose(thisCluster)*classes)
             counts = np.bincount(clusterClasses)
             # find the bin with the highest count, excluding 0
-            print counts[1:]
-            print counts[1:].size
             if counts[1:].size:
                 self.mostFrequentClass[i] = np.argmax(counts[1:]) + 1
             else:
@@ -101,6 +99,8 @@ class KMeans:
         
         for i in range(self.k):
             thisCluster = data[np.where(self.cluster == i)]
+            if thisCluster.size == 0:
+                continue
             thisClusterSize = thisCluster[:,0].size
             thisCohesion = np.zeros(thisClusterSize**2)
             N = 0
@@ -110,7 +110,7 @@ class KMeans:
                     thisCohesion[j*k + k] = np.sum((thisCluster[j] - thisCluster[k])**2)
             cohesion[i] = N/np.sum(thisCohesion)
 
-        return np.average(cohesion)
+        return np.average(cohesion[np.nonzero(cohesion)])
 
     def separation(self, data):
         separation = np.zeros(self.k*self.k)
@@ -118,9 +118,13 @@ class KMeans:
         # currently cohesion is across all data.  need for each cluster
         for i in range(self.k):
             thisCluster = data[np.where(self.cluster == i)]
+            if thisCluster.size == 0:
+                continue
             thisClusterSize = thisCluster[:,0].size
             for j in range(i + 1, self.k):
                 thatCluster = data[np.where(self.cluster == j)]
+                if thatCluster.size == 0:
+                    continue 
                 thatClusterSize = thatCluster[:,0].size
                 thisSeparation = np.zeros(thisClusterSize*thatClusterSize)
                 for m in xrange(thisClusterSize):
@@ -129,7 +133,7 @@ class KMeans:
                 separation[C] = np.sum(thisSeparation)/(thisClusterSize*thatClusterSize)
                 C += 1
 
-        return np.average(separation[:C])
+        return np.average(separation[np.nonzero(separation)])
         
 parser = ArgumentParser()
 parser.add_argument('-k', type=int, default=3, help='number of clusters')
