@@ -124,8 +124,6 @@ class KMeans:
             else:
                 self.mostFrequentClass[i] = 0
 
-        print self.mostFrequentClass
-
     def cohesion(self, data):
         """Returns avg cohesion"""
         cohesion = np.zeros(self.k)        
@@ -140,8 +138,8 @@ class KMeans:
             N = 0
             for j in xrange(thisClusterSize):
                 for k in xrange(j + 1, thisClusterSize):
-                    N += 1
                     thisCohesion[j*k + k] = np.sum((thisCluster[j] - thisCluster[k])**2)
+                    N += 1                    
             cohesion[i] = N/np.sum(thisCohesion)
             
         # non-zero elements correspond contain all centroids with points
@@ -150,7 +148,6 @@ class KMeans:
     def separation(self, data):
         """Returns avg separation between each pair of clusters"""
         separation = np.zeros(self.k*self.k)
-        C = 0
         # currently cohesion is across all data.  need for each cluster
         for i in range(self.k):
             thisCluster = data[np.where(self.cluster == i)]
@@ -168,8 +165,7 @@ class KMeans:
                 for m in xrange(thisClusterSize):
                     for n in xrange(thatClusterSize):
                         thisSeparation[m*n + n] = np.sum((thisCluster[m] - thatCluster[n])**2)
-                separation[C] = np.sum(thisSeparation)/(thisClusterSize*thatClusterSize)
-                C += 1
+                separation[i*j + j] = np.sum(thisSeparation)/(thisClusterSize*thatClusterSize)
 
         # non-zero elements correspond contain all combinations of centroids
         # where both centroids have associated points

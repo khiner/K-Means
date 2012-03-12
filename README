@@ -1,0 +1,12 @@
+*****RUN INSTRUCTIONS*****
+
+To run, use
+
+$ python KMeans.py [-h] [-k K] [-r TRAIN] [-t TEST]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -k K                  number of clusters.  default is 3
+  -r TRAIN, --train TRAIN
+                        train file. default is data/wine.train
+  -t TEST, --test TEST  test file. default is data/wine.test
