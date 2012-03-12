@@ -1,3 +1,9 @@
+K-Means
+a very fast implementation of the K-Means unsupervised learning algorithm,
+using Numpy
+Author: Karl Hiner
+github repo for cloning: git@github.com:khiner/K-Means.git
+
 *****RUN INSTRUCTIONS*****
 
 To run, use
